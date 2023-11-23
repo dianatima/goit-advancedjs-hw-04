@@ -55,6 +55,7 @@ function getPictures(query, page) {
         iziToast.success({
           title: 'OK',
           message: `Hooray! We found ${res.totalHits} images.`,
+          position: 'topRight',
         });
         isFirstSearch = false;
       }
@@ -68,6 +69,7 @@ function getPictures(query, page) {
         iziToast.error({
           title: 'Error',
           message: "We're sorry, but you've reached the end of search results.",
+          position: 'topRight',
         });
 
         stopFetching = true;
@@ -82,6 +84,7 @@ function getPictures(query, page) {
           title: 'Error',
           message:
             'Sorry, there are no images matching your search query. Please try again.',
+          position: 'topRight',
         });
       }
       stopFetching = true;
@@ -146,6 +149,7 @@ function onSubmit(event) {
     iziToast.warning({
       title: 'Caution',
       message: 'Please enter your query.',
+      position: 'topRight',
     });
     return;
   }
