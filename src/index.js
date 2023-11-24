@@ -15,6 +15,7 @@ let query = '';
 let per_page = 40;
 let isFirstSearch = false;
 let stopFetching = false;
+let isScroll = false;
 
 const BASE_URL = 'https://pixabay.com/api';
 const API_KEY = '32083326-5131f12fe438843c4a27c5327';
@@ -42,53 +43,50 @@ async function fetchPictures(query, page) {
   return response.data;
 }
 
-function getPictures(query, page) {
-  fetchPictures(query, page)
-    .then(res => {
-      const arrayLength = res.hits.length;
+async function getPictures(query, page) {
+  try {
+    const res = await fetchPictures(query, page);
+    const arrayLength = res.hits.length;
+    if (arrayLength === 0 || res.total === 0) {
+      throw new Error(response.status);
+    }
 
-      if (arrayLength === 0 || res.total === 0) {
-        throw new Error(response.status);
-      }
+    if (isFirstSearch) {
+      iziToast.success({
+        title: 'OK',
+        message: `Hooray! We found ${res.totalHits} images.`,
+        position: 'topRight',
+      });
+      isFirstSearch = false;
+    }
 
-      if (isFirstSearch) {
-        iziToast.success({
-          title: 'OK',
-          message: `Hooray! We found ${res.totalHits} images.`,
-          position: 'topRight',
-        });
-        isFirstSearch = false;
-      }
+    renderPictures(res.hits);
 
-      renderPictures(res.hits);
+    const allPictures = (page - 1) * per_page + res.hits.length;
+    const totalHits = res.totalHits;
 
-      const allPictures = (page - 1) * per_page + res.hits.length;
-      const totalHits = res.totalHits;
+    if (allPictures >= totalHits) {
+      iziToast.error({
+        title: 'Error',
+        message: "We're sorry, but you've reached the end of search results.",
+        position: 'topRight',
+      });
 
-      if (allPictures >= totalHits) {
-        iziToast.error({
-          title: 'Error',
-          message: "We're sorry, but you've reached the end of search results.",
-          position: 'topRight',
-        });
-
-        stopFetching = true;
-        return;
-      }
-
-      lightbox.refresh();
-    })
-    .catch(error => {
-      if (!stopFetching) {
-        iziToast.error({
-          title: 'Error',
-          message:
-            'Sorry, there are no images matching your search query. Please try again.',
-          position: 'topRight',
-        });
-      }
       stopFetching = true;
-    });
+      return;
+    }
+    lightbox.refresh();
+  } catch (error) {
+    if (!stopFetching) {
+      iziToast.error({
+        title: 'Error',
+        message:
+          'Sorry, there are no images matching your search query. Please try again.',
+        position: 'topRight',
+      });
+    }
+    stopFetching = true;
+  }
 }
 
 function renderPictures(pictures) {
@@ -131,17 +129,17 @@ function renderPictures(pictures) {
     )
     .join('');
 
-  refs.gallery.innerHTML += pictureElem;
+  refs.gallery.insertAdjacentHTML('beforeend', pictureElem);
 }
 
 refs.searchForm.addEventListener('submit', onSubmit);
 
 function onSubmit(event) {
   stopFetching = false;
+  isScroll = false;
   event.preventDefault();
   page = 1;
   isFirstSearch = true;
-
   refs.gallery.innerHTML = '';
 
   query = event.target.elements.searchQuery.value.trim();
@@ -155,9 +153,7 @@ function onSubmit(event) {
   }
 
   try {
-    // refs.searchForm.reset();
-    refs.input.setAttribute('disabled', 'disabled');
-    refs.submitBtn.setAttribute('disabled', 'disabled');
+    refs.searchForm.reset();
     getPictures(query, page);
   } catch (error) {
     console.error(error);
@@ -166,6 +162,10 @@ function onSubmit(event) {
 
 window.addEventListener('scroll', async () => {
   const documentRect = document.documentElement.getBoundingClientRect();
+  if (!isScroll) {
+    isScroll = true;
+    return;
+  }
   if (documentRect.bottom < document.documentElement.clientHeight + 150) {
     page += 1;
     getPictures(query, page);
