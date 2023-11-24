@@ -71,7 +71,6 @@ async function getPictures(query, page) {
         message: "We're sorry, but you've reached the end of search results.",
         position: 'topRight',
       });
-
       stopFetching = true;
       return;
     }
@@ -86,6 +85,8 @@ async function getPictures(query, page) {
       });
     }
     stopFetching = true;
+  } finally {
+    window.addEventListener('scroll', onScroll);
   }
 }
 
@@ -160,7 +161,7 @@ function onSubmit(event) {
   }
 }
 
-window.addEventListener('scroll', async () => {
+async function onScroll() {
   const documentRect = document.documentElement.getBoundingClientRect();
   if (!isScroll) {
     isScroll = true;
@@ -168,6 +169,6 @@ window.addEventListener('scroll', async () => {
   }
   if (documentRect.bottom < document.documentElement.clientHeight + 150) {
     page += 1;
-    getPictures(query, page);
+    await getPictures(query, page);
   }
-});
+}
