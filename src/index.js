@@ -8,6 +8,22 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 AOS.init();
 
+const options = {
+  root: null,
+  rootMargin: '0px',
+};
+
+const observer = new IntersectionObserver(handlerLoadMore, options);
+
+function handlerLoadMore(entries) {
+  entries.forEach(async entry => {
+    if (entry.isIntersecting) {
+      page += 1;
+      await getPictures(query, page);
+    }
+  });
+}
+
 const refs = getRefs();
 
 let page = '1';
@@ -15,7 +31,6 @@ let query = '';
 let per_page = 40;
 let isFirstSearch = false;
 let stopFetching = false;
-let isScroll = false;
 
 const BASE_URL = 'https://pixabay.com/api';
 const API_KEY = '32083326-5131f12fe438843c4a27c5327';
@@ -75,6 +90,7 @@ async function getPictures(query, page) {
       return;
     }
     lightbox.refresh();
+    observer.observe(refs.guard);
   } catch (error) {
     if (!stopFetching) {
       iziToast.error({
@@ -85,8 +101,6 @@ async function getPictures(query, page) {
       });
     }
     stopFetching = true;
-  } finally {
-    window.addEventListener('scroll', onScroll);
   }
 }
 
@@ -137,7 +151,6 @@ refs.searchForm.addEventListener('submit', onSubmit);
 
 function onSubmit(event) {
   stopFetching = false;
-  isScroll = false;
   event.preventDefault();
   page = 1;
   isFirstSearch = true;
@@ -158,17 +171,5 @@ function onSubmit(event) {
     getPictures(query, page);
   } catch (error) {
     console.error(error);
-  }
-}
-
-async function onScroll() {
-  const documentRect = document.documentElement.getBoundingClientRect();
-  if (!isScroll) {
-    isScroll = true;
-    return;
-  }
-  if (documentRect.bottom < document.documentElement.clientHeight + 150) {
-    page += 1;
-    await getPictures(query, page);
   }
 }
